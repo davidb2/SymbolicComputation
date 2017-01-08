@@ -5,6 +5,7 @@ open System
 open System.Numerics
 open FSharp.Core
 
+let private MAX_PREC = operator.Pow.Precedence
 /// Maximum integer
 let private MAX_INT_BIGNUM = bignum.FromInt ((1 <<< 31) - 1) 
 
@@ -135,8 +136,10 @@ module Expression =
             | a, b when a = ZERO -> ZERO
             | a, b when a = ONE -> ONE
             | a, b when isNum a && isNum b ->
-                if ((fromNum b).Denominator) = 1I && fromNum b < MAX_INT_BIGNUM then
-                    bignum.PowN(fromNum a, (fromNum b) |> bignum.ToInt32) |> toNum 
+                if ((fromNum b).Denominator) = 1I && 0N < fromNum b && fromNum b < MAX_INT_BIGNUM then
+                    bignum.PowN(fromNum a, (fromNum b) |> bignum.ToInt32) |> toNum
+                elif  ((fromNum b).Denominator) = 1I && - MAX_INT_BIGNUM < fromNum b && fromNum b < 0N then
+                    1N / bignum.PowN(fromNum a, ((fromNum b) + -2N * (fromNum b)) |> bignum.ToInt32) |> toNum
                 else Pow(a, b)
             | _ -> e
         | simplifiedExpression -> simplifiedExpression
@@ -152,7 +155,7 @@ module Expression =
                 numberStack, operatorStack
         | firstNum :: secondNum :: numbers, Infix(iOp) :: operators -> 
             (iOp.Expression(secondNum, firstNum) :: numbers, operators) ||> evalStack currentOperator
-        | _, _ -> failwith "Could not evaluate the operator stack."
+        | ns, os -> failwithf "Could not evaluate the operator stack.\n%A\n%A" ns os
 
     /// Converts the morpheme list into an expression
     let rec private morphemesToExpression numberStack operatorStack morphemeList = 
@@ -174,8 +177,11 @@ module Expression =
         | Prefix(pOp) :: rest, ns, Prefix(pOp1) :: operators -> 
             rest |> morphemesToExpression ns (Prefix(pOp) :: operatorStack)
         | Prefix(pOp) :: rest, ns, Infix(iOp1) :: operators when pOp.Precedence <= iOp1.Precedence ->
-            let ns', os' = (numberStack, operatorStack) ||> evalStack (Some(pOp))
-            rest |> morphemesToExpression ns' (Prefix(pOp) :: os')
+            if iOp1.Precedence = MAX_PREC then
+                rest |> morphemesToExpression ns (Prefix(pOp) :: operatorStack)
+            else
+                let ns', os' = (numberStack, operatorStack) ||> evalStack (Some(pOp))
+                rest |> morphemesToExpression ns' (Prefix(pOp) :: os')
         | Prefix(pOp) :: rest, ns, Infix(iOp1) :: operators -> 
             rest |> morphemesToExpression numberStack (Prefix(pOp) :: operatorStack)
         | Infix(iOp) :: rest, ns, [] -> 
@@ -184,8 +190,11 @@ module Expression =
             let ns', os' = (numberStack, operatorStack) ||> evalStack (Some(iOp))
             rest |> morphemesToExpression ns' (Infix(iOp) :: os')
         | Infix(iOp) :: rest, ns, Infix(iOp1) :: operators when iOp.Precedence <= iOp1.Precedence ->
-            let ns', os' = (numberStack, operatorStack) ||> evalStack (Some(iOp))
-            rest |> morphemesToExpression ns' (Infix(iOp) :: os')
+            if iOp.Precedence = MAX_PREC && iOp1.Precedence = MAX_PREC then
+                rest |> morphemesToExpression ns (Infix(iOp) :: operatorStack)
+            else
+                let ns', os' = (numberStack, operatorStack) ||> evalStack (Some(iOp))
+                rest |> morphemesToExpression ns' (Infix(iOp) :: os')
         | Infix(iOp) :: rest, ns, Infix(iOp1) :: operators -> 
             rest |> morphemesToExpression numberStack (Infix(iOp) :: operatorStack)
         | Infix(iOp) :: rest, ns, Prefix(pOp1) :: operators -> 

@@ -2,8 +2,11 @@
 #load "TypeDefinitions.fs"
 #load "SymbolicComputation.fs"
 
+#r "../packages/Unquote.3.1.2/lib/net45/Unquote.dll"
+
 open SymbolicComputation
 open System
+open Swensen.Unquote.Assertions
 
 let rec evalString = function
 | "quit" -> true
