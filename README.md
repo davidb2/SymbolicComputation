@@ -24,7 +24,6 @@ What's next?
 ------------
 The library is missing a lot of useful features that will soon be implemented such as:
   * support for decimals
-  * support for parentheses
   * reduction of useless parentheses when printing
   * single variable derivation (maybe integration)
   * equations
