@@ -36,7 +36,7 @@ module Expression =
         |> Set.ofList
 
     /// Make sure expression contains only one variable
-    let private makeSureExpreesionIsMonoVariate stringExpression =
+    let private makeSureExpressionIsMonoVariate stringExpression =
         let variables = 
             stringExpression
             |> List.filter (fun c -> allowedVariables |> Set.contains c)
@@ -236,7 +236,7 @@ module Expression =
         stringExpression
         |> sprintf "%s)"
         |> Seq.toList
-        |> makeSureExpreesionIsMonoVariate
+        |> makeSureExpressionIsMonoVariate
         |> parse [] None
         |> morphemesToExpression [] []
         |> makeSureParsedCorrectly
