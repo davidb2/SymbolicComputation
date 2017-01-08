@@ -6,16 +6,20 @@ This library currently has the ability to parse a simple algebraic expression in
   * `-`
   * `*`
   * `/`
+  * `(`
+  * `)`
   * `e`
   * `π`
   * `0-9`
   * all English letters (except `i`) as variables
+  * all whitespace
 
 Prerequisites
 -------------
-Make sure you install [`FSPowerPack`](https://www.nuget.org/packages/FSPowerPack.Community) before trying to use this library. If you are using Visual Studio, run this command in the Package Manage Console:
+Make sure you install [`FSPowerPack`](https://www.nuget.org/packages/FSPowerPack.Community) and [`Unquote`](https://www.nuget.org/packages/Unquote) before trying to use this library. If you are using Visual Studio, run these commands in the Package Manage Console:
 ```
 Install-Package FSPowerPack.Community
+Install-Package Unquote
 ```
 This will install the needed dependencies for you.
 
