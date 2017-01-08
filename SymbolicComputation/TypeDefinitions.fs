@@ -1,8 +1,12 @@
 ﻿module TypeDefinitions
- 
+
+/// Unicade character for pi
 let PI = '\u03C0'
+
+/// Unicode character for e
 let E = '\u0065'
 
+/// Numerical constants
 [<StructuredFormatDisplay("{AsString}")>]
 type sconstant = 
 | Euler
@@ -14,13 +18,16 @@ with
         | Pi -> sprintf "%c" PI
     member m.AsString = m.ToString() 
 
+/// Rational numbers
 type rconstant = 
 | Rational of bignum
 
+/// Numbers
 type constant = 
 | SpecialConstant of sconstant
 | RegularConstant of rconstant 
 
+/// Mathematical expression
 [<StructuredFormatDisplay("{AsString}")>]
 type expression = 
 | Add of expression * expression
@@ -47,9 +54,11 @@ with
         | Pow(e1, e2) -> sprintf "(%s)^(%s)" (string e1) (string e2)
     member m.AsString = m.ToString() 
 
+/// Equality of two expressions
 type equation = 
 | Eq of expression * expression
 
+/// Mathematical operators
 [<RequireQualifiedAccess>]
 type operator = 
 | Neg  
@@ -60,6 +69,7 @@ type operator =
 | Div
 | Pow
 with 
+    /// Operator to expression (binary operators)
     member self.Expression(a, b) = 
         match self with
         | Add -> expression.Add(a, b)
@@ -68,11 +78,13 @@ with
         | Div -> expression.Div(a, b)
         | Pow -> expression.Pow(a, b)
         | _ -> failwith "wrong number of arguments to expression"
+    /// Operator to expression (unary operators)
     member self.Expression a = 
         match self with
         | Neg -> expression.Neg a
         | Pos -> expression.Pos a
         | _ -> failwith "wrong number of arguments to expression"
+    /// String representation of the operator
     member self.Symbol =
         match self with
         | Neg -> '-'
@@ -82,6 +94,7 @@ with
         | Mul -> '*'
         | Div -> '/'
         | Pow -> '^'
+    /// Precedence of the operator
     member self.Precedence =
         match self with
         | Neg -> 3
@@ -91,6 +104,7 @@ with
         | Mul -> 2
         | Div -> 2
         | Pow -> 4
+    /// Static member that gets the operator based on the character and the amount of arguments it takes
     static member Get(character, args) = 
         match character, args with
         | '-', 1 -> Neg
@@ -101,6 +115,7 @@ with
         | '/', 2 -> Div
         | '^', 2 -> Pow
         | op, y -> failwithf "'%c', '%d' is not a valid operator" op y
+    /// Static member that has the same functionality of self.Symbol
     static member Get(operator) =
         match operator with
         | Neg -> '-'
@@ -131,8 +146,11 @@ with
 //    static member (-) (a, b) = if b = 0N then -a else Sub(a, toNum b)
 //    static member (-) (a, b) = Sub(a, b)
 
+/// A single unit of a mathematical expression
 type morpheme = 
 | Prefix of operator
 | Infix of operator
 | Variable of char
 | Constant of constant
+| LeftParenthesis
+| RightParenthesis

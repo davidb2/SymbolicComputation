@@ -5,43 +5,75 @@ open System
 open System.Numerics
 open FSharp.Core
 
+/// Maximum integer
 let private MAX_INT_BIGNUM = bignum.FromInt ((1 <<< 31) - 1) 
 
+/// Converts number to expression.Num
 let private toNum n = Num(RegularConstant(Rational(n)))
+
+/// Converts expression.Num to number
 let private fromNum = function
 | Num(RegularConstant(Rational(n))) -> n
 | _ -> failwith "not number."
+
+/// Determines if the argument is a Regular Constant
 let private isNum = function
 | Num(RegularConstant(_)) -> true
 | _ -> false
 
+/// Defines and holds functions that operate on expressions
 module Expression =
+    /// The number 0.
     let ZERO = toNum 0N
+
+    /// The number 1.
     let ONE = toNum 1N
 
+    /// Left parenthesis
+    let LEFT_PAREN = '('
+
+    /// Right parenthesis
+    let RIGHT_PAREN = ')'
+
+    /// Characters that are reserved for special constants
     let reservedConstants = Set.ofList [PI; E]
     let allowedVariables = 
         ['a'..'d'] @ ['f'..'h'] @ ['j'..'z'] @ ['A'..'Z']
         |> Set.ofList
 
+    /// Make sure expression contains only one variable
+    let private makeSureExpreesionIsMonoVariate stringExpression =
+        let variables = 
+            stringExpression
+            |> List.filter (fun c -> allowedVariables |> Set.contains c)
+            |> List.distinct
+            |> List.length
+        match variables with
+        | 1 -> stringExpression
+        | _ -> failwith "This module only works with single variable expressions."
+
+    /// Determines if character is a whitespace character
     let private isWhiteSpace = 
         let whiteSpaceCharacters = Set.ofList [' '; '\t'; '\r']
         fun character ->
             whiteSpaceCharacters
             |> Set.exists (fun c -> c = character) 
 
+    /// Determines if character is an operator character
     let private isOperator =
         let operators = Set.ofList ['+'; '-'; '*'; '/'; '^'; '=']
         fun operator ->
             operators
             |> Set.exists (fun o -> o = operator)
 
+    /// Determines if character is a prefix character
     let private isPrefix =
         let prefixes = Set.ofList ['+'; '-']
         fun prefix ->
             prefixes
             |> Set.exists (fun p -> p = prefix)
     
+    /// Returns the first number of the string
     let private getFirstNumber stringExpr =
         let splitIndex = 
             stringExpr 
@@ -59,7 +91,8 @@ module Expression =
             |> List.toArray 
             |> String.Concat
             |> bignum.Parse, rest
-
+    
+    /// Simplifies the given expression
     let rec private simplify unsimplifiedExpression = 
         let innerSimplifiedExpression = 
             match unsimplifiedExpression with
@@ -114,6 +147,7 @@ module Expression =
             | _ -> e
         | simplifiedExpression -> simplifiedExpression
 
+    /// Evaluates the number stack and operator stack
     let rec private evalStack (currentOperator: operator option) numberStack operatorStack = 
         match numberStack, operatorStack with
         | ns, [] -> ns, []
@@ -126,6 +160,7 @@ module Expression =
             (iOp.Expression(secondNum, firstNum) :: numbers, operators) ||> evalStack currentOperator
         | _, _ -> failwith "Could not evaluate the operator stack."
 
+    /// Converts the morpheme list into an expression
     let rec private morphemesToExpression numberStack operatorStack morphemeList = 
         match morphemeList, numberStack, operatorStack with
         | [], ns, os -> 
@@ -160,8 +195,8 @@ module Expression =
             rest |> morphemesToExpression numberStack (Infix(iOp) :: operatorStack)
         | _, _, _ -> failwith "Error: could not convert to Expression."
 
-    let fromString stringExpression=
-        let rec parse acc lastExpr stringExpr = 
+    /// Converts a string into a morpheme list
+    let rec private parse acc lastExpr stringExpr = 
             match stringExpr with
             | [] -> List.rev acc
             | head :: tail when isWhiteSpace head -> 
@@ -189,8 +224,12 @@ module Expression =
                 let vr = Variable(var) 
                 tail |> parse (vr :: acc) (Some(vr))
             | unknown :: _ -> failwithf "'%c' is an unrecognized character" unknown
+
+    let fromString stringExpression =
         stringExpression
+        |> sprintf "(%s)"
         |> Seq.toList
+        |> makeSureExpreesionIsMonoVariate
         |> parse [] None
         |> morphemesToExpression [] []
         |> simplify
