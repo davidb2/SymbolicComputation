@@ -6,6 +6,7 @@ This library currently has the ability to parse a simple algebraic expression in
   * `-`
   * `*`
   * `/`
+  * `^`
   * `(`
   * `)`
   * `e`
