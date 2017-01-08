@@ -29,12 +29,6 @@ module Expression =
     /// The number 1.
     let ONE = toNum 1N
 
-    /// Left parenthesis
-    let LEFT_PAREN = '('
-
-    /// Right parenthesis
-    let RIGHT_PAREN = ')'
-
     /// Characters that are reserved for special constants
     let reservedConstants = Set.ofList [PI; E]
     let allowedVariables = 
@@ -49,7 +43,7 @@ module Expression =
             |> List.distinct
             |> List.length
         match variables with
-        | 1 -> stringExpression
+        | 0 | 1 -> stringExpression
         | _ -> failwith "This module only works with single variable expressions."
 
     /// Determines if character is a whitespace character
@@ -163,11 +157,14 @@ module Expression =
     /// Converts the morpheme list into an expression
     let rec private morphemesToExpression numberStack operatorStack morphemeList = 
         match morphemeList, numberStack, operatorStack with
-        | [], ns, os -> 
+        | RightParenthesis :: tail, ns, os -> 
             let ns', os' = (ns, os) ||> evalStack None
             match ns', os' with
-            | [e], [] -> e
+            | [e], [] -> e, tail
             | _, _ -> failwith "Could not parse expression."
+        | LeftParenthesis :: tail, ns, os ->
+            let innerExpression, rest = tail |> morphemesToExpression [] []
+            rest |> morphemesToExpression (innerExpression :: ns) os
         | Constant(c) :: rest, ns, os -> 
             rest |> morphemesToExpression (Num(c) :: ns) os
         | Variable(v) :: rest, ns, os -> 
@@ -193,7 +190,12 @@ module Expression =
             rest |> morphemesToExpression numberStack (Infix(iOp) :: operatorStack)
         | Infix(iOp) :: rest, ns, Prefix(pOp1) :: operators -> 
             rest |> morphemesToExpression numberStack (Infix(iOp) :: operatorStack)
-        | _, _, _ -> failwith "Error: could not convert to Expression."
+        | _ -> failwith "Error: could not convert to Expression (maybe check parenstheses?)."
+
+    let private makeSureParsedCorrectly (resultingExpression, resultingMorphemeList) = 
+        match resultingMorphemeList with
+        | [] -> resultingExpression
+        | _  -> failwith "Error: could not convert to Expression (maybe check parenstheses?)."
 
     /// Converts a string into a morpheme list
     let rec private parse acc lastExpr stringExpr = 
@@ -201,12 +203,17 @@ module Expression =
             | [] -> List.rev acc
             | head :: tail when isWhiteSpace head -> 
                 parse acc lastExpr tail
+            | '(' :: tail ->
+                tail |> parse (LeftParenthesis :: acc) (Some(LeftParenthesis))
+            | ')' :: tail -> 
+                tail |> parse (RightParenthesis :: acc) (Some(RightParenthesis))
             | op :: tail when isOperator op ->
                 match lastExpr with
                 | None | Some(Infix(_)) | Some(Prefix(_)) when isPrefix op -> 
                     let opr = Prefix(operator.Get(op, 1))
                     tail |> parse (opr :: acc) (Some(opr))
-                | Some(Variable(_)) | Some(Constant(_)) ->
+                | Some(Variable(_)) | Some(Constant(_)) 
+                | Some(LeftParenthesis) | Some(RightParenthesis) ->
                     let opr = Infix(operator.Get(op, 2))
                     tail |> parse (opr :: acc) (Some(opr))
                 | _ -> failwithf "'%c' is not properly placed" op
@@ -227,9 +234,10 @@ module Expression =
 
     let fromString stringExpression =
         stringExpression
-        |> sprintf "(%s)"
+        |> sprintf "%s)"
         |> Seq.toList
         |> makeSureExpreesionIsMonoVariate
         |> parse [] None
         |> morphemesToExpression [] []
+        |> makeSureParsedCorrectly
         |> simplify
