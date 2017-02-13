@@ -7,6 +7,7 @@ This library currently has the ability to parse a simple algebraic expression in
   * `*`
   * `/`
   * `^`
+  * `.`
   * `(`
   * `)`
   * `e`
@@ -28,7 +29,6 @@ This will install the needed dependencies for you.
 What's next?
 ------------
 The library is missing a lot of useful features that will soon be implemented such as:
-  * support for decimals
   * reduction of useless parentheses when printing
   * single variable derivation (maybe integration)
   * equations
