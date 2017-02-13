@@ -1,4 +1,4 @@
-﻿#r "../packages/FSPowerPack.Core.Community.2.0.0.0/Lib/Net40/FSharp.PowerPack.dll"
+﻿#r "../packages/FSPowerPack.Core.Community.3.0.0.0/Lib/Net40/FSharp.PowerPack.dll"
 #load "TypeDefinitions.fs"
 #load "SymbolicComputation.fs"
 

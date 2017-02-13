@@ -56,6 +56,7 @@
     <Compile Include="SymbolicComputation.fs" />
     <None Include="ExampleScript.fsx" />
     <Content Include="packages.config" />
+    <Compile Include="Test.fs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="FSharp.Core">

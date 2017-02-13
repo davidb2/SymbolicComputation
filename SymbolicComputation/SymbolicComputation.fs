@@ -68,24 +68,40 @@ module Expression =
             prefixes
             |> Set.exists (fun p -> p = prefix)
     
+    /// turns the number into fraction string
+    let private fractionize = function
+    | integer when integer |> List.contains '.' |> not -> 
+        integer |> String.Concat |> bignum.Parse
+    | nonInteger -> 
+        let indexOfDecimal = nonInteger |> List.findIndex ((=) '.')
+        let lengthOfNonInteger = nonInteger |> List.length
+        let nonIntegerWithoutDecimal = nonInteger |> List.filter ((<>) '.')
+        let numerator = nonIntegerWithoutDecimal
+        let denominator = pown 10 (lengthOfNonInteger - indexOfDecimal - 1) |> string
+        (numerator |> String.Concat |> bignum.Parse) / (denominator |> String.Concat |> bignum.Parse)
+        
+
     /// Returns the first number of the string
     let private getFirstNumber stringExpr =
         let splitIndex = 
             stringExpr 
-            |> List.tryFindIndex (fun c -> not ('0' <= c && c <= '9')) 
+            |> List.tryFindIndex (fun c -> not ('0' <= c && c <= '9' || c = '.')) 
         match splitIndex with
         | None -> 
-            stringExpr 
-            |> String.Concat
-            |> bignum.Parse, []
+            if stringExpr |> List.filter (fun c -> c = '.') |> List.length > 1 then
+                failwithf "\'%s\' is not a valid number." (String.Concat stringExpr) 
+            else 
+                stringExpr 
+                |> fractionize, []
         | Some(index) -> 
             let num, rest = 
                 stringExpr
                 |> List.splitAt index 
-            num 
-            |> List.toArray 
-            |> String.Concat
-            |> bignum.Parse, rest
+            if num |> List.filter (fun c -> c = '.') |> List.length > 1 then
+                failwithf "\'%s\' is not a valid number." (String.Concat num) 
+            else 
+                num 
+                |> fractionize, rest
     
     /// Simplifies the given expression
     let rec private simplify unsimplifiedExpression = 
@@ -226,7 +242,7 @@ module Expression =
                     let opr = Infix(operator.Get(op, 2))
                     tail |> parse (opr :: acc) (Some(opr))
                 | _ -> failwithf "'%c' is not properly placed" op
-            | number :: tail when '0' <= number && number <= '9' -> 
+            | number :: tail when '0' <= number && number <= '9' || number = '.' -> 
                 let num, rest = getFirstNumber (number :: tail)
                 let rcnst = Constant(RegularConstant(Rational(num)))
                 rest |> parse (rcnst :: acc) (Some(rcnst))
