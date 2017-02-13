@@ -45,6 +45,10 @@ let testParentheses () =
     <@ "1 + (2 * 3)" |> Expression.fromString |> string = "7" @> |> test
     <@ "(1 + 2 ) * 3" |> Expression.fromString |> string = "9" @> |> test
 
+let testDecimals () = 
+    <@ "3.4 + (7.8 - 1.2)" |> Expression.fromString |> string = "10" @> |> test
+    <@ "3.4 + (7.8 * 1.2)" |> Expression.fromString |> string = "319/25" @> |> test
+
 // test all tests
 try 
     testWhiteSpace()
@@ -52,6 +56,7 @@ try
     testBinaryOperators()
     testPrecedence()
     testParentheses()
+    testDecimals()
     printfn "All test cases passed!"
 with
     | e -> printfn "%s" e.Message
